@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>תחנות דלק ישראל</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    :root {
+      --red: #E30613; --bg: #111827; --panel: #1f2937;
+      --card: #374151; --border: #374151; --text: #f3f4f6; --muted: #9ca3af;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html,body { height:100%; font-family:'Segoe UI',Tahoma,Arial,sans-serif;
+                background:var(--bg); color:var(--text); overflow:hidden; }
+
+    /* ── Header ───────────────────────────── */
+    #header {
+      position:fixed; top:0; left:0; right:0;
+      background:var(--red); display:flex; flex-direction:column;
+      z-index:2000; box-shadow:0 2px 12px rgba(0,0,0,.45);
+    }
+    #row1 {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:0 16px; height:54px;
+    }
+    #title { font-size:1.1rem; font-weight:700; color:#fff;
+             display:flex; align-items:center; gap:8px; }
+    #title small { font-size:.7rem; font-weight:400; opacity:.8; }
+
+    #locateBtn {
+      background:#fff; color:var(--red); border:none; border-radius:8px;
+      padding:7px 13px; font-size:.85rem; font-weight:700; cursor:pointer;
+      font-family:inherit; display:flex; align-items:center; gap:5px;
+      transition:background .15s,transform .1s; flex-shrink:0;
+    }
+    #locateBtn:hover  { background:#f0f0f0; transform:translateY(-1px); }
+    #locateBtn:active { transform:translateY(0); }
+    #locateBtn:disabled { opacity:.6; cursor:not-allowed; }
+
+    #row2 { background:rgba(0,0,0,.18); padding:8px 12px 6px; }
+    #search-row { display:flex; gap:6px; align-items:center; }
+
+    #addr-wrapper { position:relative; flex:1; min-width:0; display:flex; gap:6px; }
+
+    #addr-input {
+      flex:1; min-width:0;
+      background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.35);
+      border-radius:8px; padding:7px 12px; color:#fff;
+      font-size:.88rem; font-family:inherit; outline:none;
+      transition:background .2s,border-color .2s;
+    }
+    #addr-input::placeholder { color:rgba(255,255,255,.6); }
+    #addr-input:focus { background:rgba(255,255,255,.22); border-color:rgba(255,255,255,.7); }
+
+    #addr-clear {
+      background:none; border:none; color:rgba(255,255,255,.7);
+      font-size:1.1rem; cursor:pointer; padding:0 4px;
+      flex-shrink:0; display:none;
+    }
+    #addr-clear:hover { color:#fff; }
+
+    #search-btn {
+      background:rgba(255,255,255,.2); color:#fff;
+      border:1px solid rgba(255,255,255,.35); border-radius:8px;
+      padding:7px 13px; font-size:.85rem; font-weight:700;
+      font-family:inherit; cursor:pointer; flex-shrink:0;
+      transition:background .15s;
+    }
+    #search-btn:hover { background:rgba(255,255,255,.3); }
+    #search-btn:disabled { opacity:.5; cursor:not-allowed; }
+
+    #addr-suggestions {
+      display:none; position:absolute;
+      top:calc(100% + 4px); right:0; left:0;
+      background:var(--panel); border:1px solid var(--border);
+      border-radius:10px; overflow:hidden; max-height:220px;
+      overflow-y:auto; z-index:3000; box-shadow:0 8px 24px rgba(0,0,0,.5);
+    }
+    .suggestion { padding:9px 13px; font-size:.82rem; color:var(--text);
+                  cursor:pointer; border-bottom:1px solid var(--border); line-height:1.35; }
+    .suggestion:last-child { border-bottom:none; }
+    .suggestion:hover,.suggestion.active { background:var(--card); }
+    .sug-main { font-weight:600; }
+    .sug-sub  { color:var(--muted); font-size:.75rem; margin-top:2px; }
+
+    #addr-status { font-size:.72rem; color:rgba(255,255,255,.65);
+                   margin-top:4px; min-height:14px; }
+
+    /* ── Layout ───────────────────────────── */
+    #layout { display:flex; height:100%; padding-top:112px; }
+
+    /* ── Sidebar ──────────────────────────── */
+    #sidebar {
+      width:300px; background:var(--panel); display:flex;
+      flex-direction:column; border-left:1px solid var(--border);
+      flex-shrink:0; z-index:10;
+    }
+    #sidebar-top { padding:10px 12px 8px; border-bottom:1px solid var(--border); }
+    #station-count { font-size:.8rem; color:var(--muted); margin-bottom:6px; }
+    #station-count b { color:var(--red); }
+    #last-updated { font-size:.7rem; color:var(--muted); margin-bottom:8px; opacity:.75; }
+
+    #name-filter {
+      width:100%; background:var(--bg); border:1px solid var(--border);
+      border-radius:8px; padding:7px 11px; color:var(--text);
+      font-size:.88rem; font-family:inherit; outline:none;
+      transition:border-color .2s;
+    }
+    #name-filter:focus { border-color:var(--red); }
+    #name-filter::placeholder { color:var(--muted); }
+
+    #station-list { flex:1; overflow-y:auto; padding:8px; }
+    #station-list::-webkit-scrollbar { width:4px; }
+    #station-list::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+    /* ── Cards ────────────────────────────── */
+    .card {
+      background:var(--card); border:1px solid transparent;
+      border-radius:10px; padding:11px 13px; margin-bottom:6px;
+      cursor:pointer; transition:border-color .2s,transform .15s;
+    }
+    .card:hover { border-color:var(--red); transform:translateX(2px); }
+    .card.nearest { border-color:var(--red); background:linear-gradient(135deg,#2a0a0a,var(--card)); }
+    .card-name { font-weight:700; font-size:.92rem; margin-bottom:3px;
+                 display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+    .badge { background:var(--red); color:#fff; font-size:.65rem; font-weight:600;
+             padding:2px 6px; border-radius:4px; white-space:nowrap; }
+    .card-addr { font-size:.76rem; color:var(--muted); margin-bottom:4px; }
+    .card-dist { font-size:.78rem; color:var(--red); font-weight:600; }
+
+    /* ── Map ──────────────────────────────── */
+    #map { flex:1; z-index:1; }
+
+    /* ── Loading ──────────────────────────── */
+    #loading {
+      position:fixed; inset:0; background:rgba(17,24,39,.88);
+      display:flex; flex-direction:column; align-items:center;
+      justify-content:center; z-index:9000; gap:14px;
+    }
+    #loading.hidden { display:none; }
+    .spinner { width:44px; height:44px; border:4px solid var(--border);
+               border-top-color:var(--red); border-radius:50%;
+               animation:spin 1s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    #loading p { font-size:.95rem; color:var(--muted); }
+
+    /* ── Popup ────────────────────────────── */
+    .leaflet-popup-content-wrapper { border-radius:12px !important; box-shadow:0 8px 24px rgba(0,0,0,.35) !important; }
+    .leaflet-popup-content { margin:14px 16px !important; min-width:210px; }
+    .pop-name { font-size:1rem; font-weight:700; color:var(--red); margin-bottom:5px; }
+    .pop-addr { font-size:.82rem; color:#555; margin-bottom:4px; }
+    .pop-dist { font-size:.82rem; color:#333; margin-bottom:10px; }
+    .pop-btns { display:flex; gap:7px; }
+    .pop-btn  { flex:1; padding:8px 6px; border:none; border-radius:8px;
+                font-size:.8rem; font-weight:700; text-decoration:none;
+                text-align:center; cursor:pointer; display:flex;
+                align-items:center; justify-content:center; gap:4px;
+                transition:opacity .15s,transform .1s; }
+    .pop-btn:hover  { opacity:.85; transform:translateY(-1px); }
+    .pop-btn:active { transform:translateY(0); }
+    .btn-waze  { background:#33ccff; color:#111; }
+    .btn-gmaps { background:#4285f4; color:#fff; }
+
+    /* ── Mobile ───────────────────────────── */
+    #mobile-bar {
+      display:none; position:fixed; bottom:0; left:0; right:0;
+      background:var(--panel); border-top:1px solid var(--border);
+      padding:10px 14px 14px; z-index:1500;
+    }
+    #mobile-nearest { font-size:.85rem; margin-bottom:8px; }
+    #mobile-btns    { display:flex; gap:8px; }
+    @media (max-width:640px) { #sidebar{display:none;} #mobile-bar{display:block;} }
+  </style>
+</head>
+<body>
+
+<div id="header">
+  <div id="row1">
+    <div id="title">⛽ תחנות דלק <small>כל הארץ</small></div>
+    <button id="locateBtn" onclick="findMe()">📍 מצא אותי</button>
+  </div>
+  <div id="row2">
+    <div id="search-row">
+      <div id="addr-wrapper">
+        <input id="addr-input" type="text" placeholder="חפש כתובת בישראל…"
+               oninput="onAddrInput(this.value)" onkeydown="onAddrKey(event)" />
+        <button id="addr-clear" onclick="clearAddrSearch()" title="נקה">✕</button>
+        <div id="addr-suggestions"></div>
+      </div>
+      <button id="search-btn" onclick="searchAddress()">🔍 חפש</button>
+    </div>
+    <div id="addr-status"></div>
+  </div>
+</div>
+
+<div id="loading"><div class="spinner"></div><p>טוען תחנות דלק…</p></div>
+
+<div id="layout">
+  <div id="sidebar">
+    <div id="sidebar-top">
+      <div id="station-count"></div>
+      <div id="last-updated"></div>
+      <input id="name-filter" type="text" placeholder="סנן לפי שם או עיר…"
+             oninput="filterByName(this.value)" />
+    </div>
+    <div id="station-list"></div>
+  </div>
+  <div id="map"></div>
+</div>
+
+<div id="mobile-bar">
+  <div id="mobile-nearest" style="color:var(--muted)">לחץ "מצא אותי" לתחנה הקרובה</div>
+  <div id="mobile-btns"></div>
+</div>
+
+<script>
+// ── Map ───────────────────────────────────────────────────────────────────────
+const map = L.map('map', { center:[31.5,35.0], zoom:8, zoomControl:false });
+L.control.zoom({ position:'bottomright' }).addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  maxZoom:19
+}).addTo(map);
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let allStations   = [];   // full list from stations.json
+let shownStations = [];   // currently displayed in sidebar (filtered)
+let leafletMarkers = new Map();
+let pinMarker  = null;
+let nearestId  = null;
+let refLat = null, refLon = null; // reference point for distance sorting
+
+// ── Icons ─────────────────────────────────────────────────────────────────────
+function stationIcon(nearest) {
+  const size = nearest ? 34 : 26, bg = nearest ? '#ff3300' : '#E30613';
+  return L.divIcon({
+    html:`<div style="width:${size}px;height:${size}px;background:${bg};border-radius:50%;
+      border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.5);
+      display:flex;align-items:center;justify-content:center;font-size:${nearest?17:13}px;">⛽</div>`,
+    className:'', iconSize:[size,size], iconAnchor:[size/2,size/2], popupAnchor:[0,-size/2]
+  });
+}
+function dotIcon(color) {
+  return L.divIcon({
+    html:`<div style="width:20px;height:20px;background:${color};border-radius:50%;
+      border:3px solid #fff;box-shadow:0 0 0 5px ${color}40;"></div>`,
+    className:'', iconSize:[20,20], iconAnchor:[10,10]
+  });
+}
+
+// ── Popup ─────────────────────────────────────────────────────────────────────
+function buildPopup(s) {
+  const w = `https://waze.com/ul?ll=${s.lat},${s.lon}&navigate=yes`;
+  const g = `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}&travelmode=driving`;
+  return `
+    <div class="pop-name">⛽ ${s.name}</div>
+    ${s.addr ? `<div class="pop-addr">📌 ${s.addr}</div>` : ''}
+    ${s.dist != null ? `<div class="pop-dist">📍 ${fmt(s.dist)} ממיקומך</div>` : ''}
+    <div class="pop-btns">
+      <a href="${w}" target="_blank" class="pop-btn btn-waze">🗺 וויז</a>
+      <a href="${g}" target="_blank" class="pop-btn btn-gmaps">🗺 גוגל מפס</a>
+    </div>`;
+}
+function openPopup(s) {
+  const m = leafletMarkers.get(s.id);
+  if (!m) return;
+  (m.getPopup() ? m.getPopup().setContent(buildPopup(s)) : m.bindPopup(buildPopup(s),{maxWidth:280}));
+  m.openPopup();
+}
+
+// ── Render markers ────────────────────────────────────────────────────────────
+function renderMarkers() {
+  leafletMarkers.forEach(m => map.removeLayer(m));
+  leafletMarkers.clear();
+  allStations.forEach(s => {
+    const m = L.marker([s.lat,s.lon], { icon:stationIcon(s.id===nearestId) });
+    m.bindPopup(buildPopup(s), { maxWidth:280 });
+    m.on('click', () => m.getPopup().setContent(buildPopup(s)));
+    m.addTo(map);
+    leafletMarkers.set(s.id, m);
+  });
+}
+
+// ── Render sidebar list ───────────────────────────────────────────────────────
+function renderList(list) {
+  const el = document.getElementById('station-list');
+  if (!list.length) {
+    el.innerHTML = `<div style="padding:20px;text-align:center;color:var(--muted)">לא נמצאו תחנות</div>`;
+    return;
+  }
+  el.innerHTML = list.slice(0, 120).map(s => {
+    const nn = s.id === nearestId;
+    return `<div id="card-${s.id}" class="card ${nn?'nearest':''}" onclick="zoomTo(${JSON.stringify(s.id)})">
+      <div class="card-name">${nn?'<span class="badge">הכי קרובה ★</span>':''}${s.name}</div>
+      ${s.addr ? `<div class="card-addr">📌 ${s.addr}</div>` : ''}
+      ${s.dist!=null ? `<div class="card-dist">${fmt(s.dist)}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function zoomTo(id) {
+  const s = allStations.find(s => s.id===id); if (!s) return;
+  map.setView([s.lat,s.lon], 15); openPopup(s);
+}
+
+function setCount(n) {
+  document.getElementById('station-count').innerHTML = `<b>${n}</b> תחנות דלק בכל הארץ`;
+}
+
+function filterByName(q) {
+  q = q.trim();
+  shownStations = q
+    ? allStations.filter(s => s.name.includes(q) || s.addr.includes(q))
+    : allStations;
+  renderList(shownStations);
+}
+
+// ── Distance utils ────────────────────────────────────────────────────────────
+function haversine(la1,lo1,la2,lo2) {
+  const R=6371, r=Math.PI/180;
+  const dLa=(la2-la1)*r, dLo=(lo2-lo1)*r;
+  const a=Math.sin(dLa/2)**2+Math.cos(la1*r)*Math.cos(la2*r)*Math.sin(dLo/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+function fmt(km) { return km<1 ? `${Math.round(km*1000)} מ'` : `${km.toFixed(1)} ק"מ`; }
+
+// ── Sort all stations by distance from a reference point ──────────────────────
+function sortByRef(lat, lon) {
+  refLat = lat; refLon = lon;
+  allStations.forEach(s => { s.dist = haversine(lat, lon, s.lat, s.lon); });
+  allStations.sort((a,b) => a.dist - b.dist);
+  nearestId     = allStations[0]?.id ?? null;
+  shownStations = allStations;
+  document.getElementById('name-filter').value = '';
+  renderMarkers();        // re-render with nearest highlighted
+  renderList(allStations);
+  updateMobileBar(allStations[0]);
+  if (nearestId) setTimeout(() => openPopup(allStations[0]), 400);
+}
+
+// ── GPS locate ────────────────────────────────────────────────────────────────
+function findMe() {
+  const btn = document.getElementById('locateBtn');
+  btn.textContent = '⏳ מאתר…'; btn.disabled = true;
+  if (!navigator.geolocation) { alert('הדפדפן אינו תומך באיתור מיקום'); reset(); return; }
+  navigator.geolocation.getCurrentPosition(pos => {
+    const {latitude:lat, longitude:lon} = pos.coords;
+    setPin(lat, lon, '#4285f4', 'המיקום שלך');
+    sortByRef(lat, lon);
+    map.setView([lat, lon], 13);
+    setStatus(`התחנה הקרובה: ${allStations[0]?.name} — ${fmt(allStations[0]?.dist)}`);
+    reset();
+  }, err => {
+    console.error(err);
+    alert('לא ניתן לאתר מיקום. בדוק הרשאות גישה למיקום.');
+    reset();
+  }, { enableHighAccuracy:true, timeout:12000 });
+  function reset() { btn.textContent='📍 מצא אותי'; btn.disabled=false; }
+}
+
+// ── Address search ────────────────────────────────────────────────────────────
+let suggestData=[], activeSugIdx=-1, debounceTimer=null;
+
+function onAddrInput(val) {
+  document.getElementById('addr-clear').style.display = val ? 'block' : 'none';
+  clearTimeout(debounceTimer);
+  if (val.trim().length < 2) { hideSug(); return; }
+  debounceTimer = setTimeout(() => loadSuggestions(val), 320);
+}
+function onAddrKey(e) {
+  const items = document.querySelectorAll('#addr-suggestions .suggestion');
+  if      (e.key==='ArrowDown') { e.preventDefault(); activeSugIdx=Math.min(activeSugIdx+1,items.length-1); hlSug(items); }
+  else if (e.key==='ArrowUp')   { e.preventDefault(); activeSugIdx=Math.max(activeSugIdx-1,-1); hlSug(items); }
+  else if (e.key==='Enter')     { e.preventDefault(); activeSugIdx>=0 ? pickSug(activeSugIdx) : searchAddress(); }
+  else if (e.key==='Escape')    { hideSug(); }
+}
+function hlSug(items) { items.forEach((el,i) => el.classList.toggle('active', i===activeSugIdx)); }
+
+async function loadSuggestions(q) {
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=6&countrycodes=il&accept-language=he`);
+    suggestData = await res.json(); activeSugIdx = -1; showSug();
+  } catch(_) {}
+}
+function showSug() {
+  const box = document.getElementById('addr-suggestions');
+  if (!suggestData.length) { hideSug(); return; }
+  box.innerHTML = suggestData.map((r,i) => {
+    const p = r.display_name.split(',');
+    return `<div class="suggestion" onmousedown="pickSug(${i})">
+      <div class="sug-main">${p[0].trim()}</div>
+      ${p[1] ? `<div class="sug-sub">${p.slice(1,3).join(',').trim()}</div>` : ''}
+    </div>`;
+  }).join('');
+  box.style.display='block';
+}
+function hideSug() { document.getElementById('addr-suggestions').style.display='none'; suggestData=[]; activeSugIdx=-1; }
+
+function pickSug(i) {
+  const r = suggestData[i]; if (!r) return;
+  const label = r.display_name.split(',').slice(0,2).join(', ');
+  document.getElementById('addr-input').value = label;
+  hideSug();
+  setPin(parseFloat(r.lat), parseFloat(r.lon), '#10b981', label);
+  sortByRef(parseFloat(r.lat), parseFloat(r.lon));
+  map.setView([parseFloat(r.lat), parseFloat(r.lon)], 12);
+  setStatus(`התחנה הקרובה ל${label}: ${allStations[0]?.name} — ${fmt(allStations[0]?.dist)}`);
+}
+
+async function searchAddress() {
+  const q = document.getElementById('addr-input').value.trim(); if (!q) return;
+  const btn = document.getElementById('search-btn');
+  btn.disabled=true; btn.textContent='⏳';
+  await loadSuggestions(q);
+  if (suggestData.length) pickSug(0);
+  else setStatus('הכתובת לא נמצאה. נסה לנסח אחרת.', true);
+  btn.disabled=false; btn.textContent='🔍 חפש';
+}
+
+function clearAddrSearch() {
+  document.getElementById('addr-input').value = '';
+  document.getElementById('addr-clear').style.display = 'none';
+  hideSug(); setStatus('');
+  if (pinMarker) { map.removeLayer(pinMarker); pinMarker=null; }
+  // Reset distances and restore alphabetical order
+  allStations.forEach(s => s.dist=null);
+  allStations.sort((a,b) => a.name.localeCompare(b.name, 'he'));
+  nearestId=null; shownStations=allStations;
+  document.getElementById('name-filter').value='';
+  renderMarkers();
+  renderList(allStations);
+}
+
+function setPin(lat, lon, color, label) {
+  if (pinMarker) map.removeLayer(pinMarker);
+  pinMarker = L.marker([lat,lon], { icon:dotIcon(color), zIndexOffset:1000 })
+    .addTo(map).bindTooltip(label, { permanent:false });
+}
+
+// ── Mobile bar ────────────────────────────────────────────────────────────────
+function updateMobileBar(s) {
+  if (!s) return;
+  const w = `https://waze.com/ul?ll=${s.lat},${s.lon}&navigate=yes`;
+  const g = `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}&travelmode=driving`;
+  document.getElementById('mobile-nearest').innerHTML = `<b>הכי קרובה:</b> ${s.name} — ${fmt(s.dist)}`;
+  document.getElementById('mobile-btns').innerHTML =
+    `<a href="${w}" target="_blank" class="pop-btn btn-waze"  style="flex:1">🗺 וויז</a>
+     <a href="${g}" target="_blank" class="pop-btn btn-gmaps" style="flex:1">🗺 גוגל מפס</a>`;
+}
+
+// ── Status ────────────────────────────────────────────────────────────────────
+function setStatus(msg, err=false) {
+  const el=document.getElementById('addr-status');
+  el.textContent=msg; el.style.color=err?'#fca5a5':'rgba(255,255,255,.65)';
+}
+
+// Close suggestions on outside click
+document.addEventListener('click', e => {
+  if (!document.getElementById('addr-wrapper').contains(e.target)) hideSug();
+});
+
+// ── Boot — load from stations.json ────────────────────────────────────────────
+(async () => {
+  try {
+    const res = await fetch('stations.json');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    allStations   = data.stations;
+    shownStations = allStations;
+
+    // Default order: alphabetical by name
+    allStations.sort((a,b) => a.name.localeCompare(b.name,'he'));
+
+    // Show last updated
+    const d = new Date(data.generated);
+    const dateStr = d.toLocaleDateString('he-IL',{day:'numeric',month:'long',year:'numeric'});
+    document.getElementById('last-updated').textContent = `עדכון אחרון: ${dateStr}`;
+
+    setCount(allStations.length);
+    renderMarkers();
+    renderList(allStations);
+
+    // Fit map to all stations
+    const bounds = L.latLngBounds(allStations.map(s=>[s.lat,s.lon]));
+    map.fitBounds(bounds, { padding:[40,40] });
+
+  } catch(err) {
+    console.error(err);
+    document.getElementById('station-list').innerHTML =
+      `<div style="padding:20px;text-align:center;color:#f87171">
+        שגיאה בטעינת הנתונים.<br>
+        <small style="color:var(--muted)">נסה לרענן את הדף</small>
+      </div>`;
+  } finally {
+    document.getElementById('loading').classList.add('hidden');
+  }
+})();
+</script>
+</body>
+</html>
