@@ -154,7 +154,38 @@
     }
     #mobile-nearest { font-size:.85rem; margin-bottom:8px; }
     #mobile-btns    { display:flex; gap:8px; }
-    @media (max-width:640px) { #mobile-bar { display:block; } }
+
+    @media (max-width:640px) {
+      #mobile-bar { display:block; }
+
+      #row1 {
+        padding:6px 10px;
+        gap:6px;
+        flex-wrap:nowrap;
+        align-items:center;
+      }
+
+      #title { flex:1; min-width:0; }
+      #title-main { font-size:.72rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      #title-sub  { font-size:.9rem; }
+
+      #stats {
+        display:none !important;
+      }
+
+      #locateBtn {
+        padding:7px 10px;
+        font-size:.82rem;
+        flex-shrink:0;
+      }
+
+      #row2 { padding:5px 10px 4px; }
+
+      #addr-input { font-size:.82rem; padding:6px 10px; }
+      #search-btn { padding:6px 10px; font-size:.8rem; }
+
+      #addr-status { font-size:.7rem; }
+    }
   </style>
 </head>
 <body>
