@@ -42,7 +42,7 @@
       font-size:.82rem; color:rgba(255,255,255,.85); white-space:nowrap;
     }
     #stat-radius {
-      display:none; align-items:center; gap:5px; flex-wrap:wrap;
+      display:flex; align-items:center; gap:5px; flex-wrap:wrap;
       font-size:.85rem; color:#fff; font-weight:600;
     }
     #stat-radius label { font-weight:400; color:rgba(255,255,255,.85); }
@@ -159,36 +159,31 @@
       #mobile-bar { display:block; }
 
       #row1 {
-        padding:6px 10px;
+        padding:6px 10px 4px;
         gap:6px;
-        flex-wrap:nowrap;
+        flex-wrap:wrap;
         align-items:center;
       }
 
-      #title { flex:1; min-width:0; }
+      /* שורה 1: כותרת + כפתור */
+      #title { flex:1; min-width:0; order:1; }
       #title-main { display:none; }
       #title-sub  { font-size:.95rem; white-space:nowrap; }
+      #locateBtn  { order:2; padding:7px 10px; font-size:.82rem; flex-shrink:0; }
 
-      /* stats: take full width below title+button, no border separator */
+      /* שורה 2: רדיוס — רוחב מלא */
       #stats {
-        flex:0 0 100%; order:3;
-        border:none; padding:0; margin:0;
-        min-width:0;
+        order:3; flex:0 0 100%;
+        border:none; padding:0; margin:0; min-width:0;
       }
       #stat-total { display:none; }
       #stat-radius {
-        font-size:.8rem; gap:6px; flex-wrap:nowrap;
+        width:100%; font-size:.8rem; gap:6px; flex-wrap:nowrap;
         background:rgba(0,0,0,.18); border-radius:8px;
-        padding:5px 10px; margin-top:2px;
+        padding:5px 10px;
       }
-      #radius-sel { width:80px; }
+      #radius-sel { flex:1; width:auto; }
       #radius-val { font-size:.78rem; min-width:36px; }
-
-      #locateBtn {
-        padding:7px 10px;
-        font-size:.82rem;
-        flex-shrink:0;
-      }
 
       #row2 { padding:5px 10px 4px; }
 
@@ -337,12 +332,11 @@ function renderMarkers() {
 // ── Stats ─────────────────────────────────────────────────────────────────────
 function updateStats() {
   document.getElementById('stat-total').textContent = `${allStations.length} תחנות דלק בכל הארץ`;
-  if (refLat === null) return;
   const radiusKm = parseInt(document.getElementById('radius-sel').value);
   document.getElementById('radius-val').textContent = `${radiusKm} ק"מ`;
+  if (refLat === null) { document.getElementById('stat-count').textContent = '—'; return; }
   const count = allStations.filter(s => s.dist != null && s.dist <= radiusKm).length;
   document.getElementById('stat-count').textContent = count;
-  document.getElementById('stat-radius').style.display = 'flex';
 }
 
 function drawRadiusCircle() {
@@ -472,7 +466,7 @@ function clearAddrSearch() {
   allStations.forEach(s => s.dist=null);
   allStations.sort((a,b) => a.name.localeCompare(b.name,'he'));
   refLat=null; refLon=null; nearestId=null;
-  document.getElementById('stat-radius').style.display='none';
+  updateStats();
   renderMarkers();
 }
 
