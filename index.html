@@ -8,7 +8,7 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
     :root {
-      --red: #E30613; --bg: #111827; --panel: #1f2937;
+      --red: #1a5276; --bg: #111827; --panel: #1f2937;
       --card: #374151; --border: #374151; --text: #f3f4f6; --muted: #9ca3af;
     }
     * { margin:0; padding:0; box-sizing:border-box; }
@@ -169,9 +169,20 @@
       #title-main { display:none; }
       #title-sub  { font-size:.95rem; white-space:nowrap; }
 
+      /* stats: take full width below title+button, no border separator */
       #stats {
-        display:none !important;
+        flex:0 0 100%; order:3;
+        border:none; padding:0; margin:0;
+        min-width:0;
       }
+      #stat-total { display:none; }
+      #stat-radius {
+        font-size:.8rem; gap:6px; flex-wrap:nowrap;
+        background:rgba(0,0,0,.18); border-radius:8px;
+        padding:5px 10px; margin-top:2px;
+      }
+      #radius-sel { width:80px; }
+      #radius-val { font-size:.78rem; min-width:36px; }
 
       #locateBtn {
         padding:7px 10px;
@@ -262,7 +273,7 @@ let radiusCircle = null;
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 function stationIcon(nearest) {
-  const size = nearest ? 34 : 26, bg = nearest ? '#ff3300' : '#E30613';
+  const size = nearest ? 34 : 26, bg = nearest ? '#e67e22' : '#1a5276';
   return L.divIcon({
     html:`<div style="width:${size}px;height:${size}px;background:${bg};border-radius:50%;
       border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.5);
