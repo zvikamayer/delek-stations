@@ -48,12 +48,17 @@
     #stat-radius label { font-weight:400; color:rgba(255,255,255,.85); }
     #stat-count { font-size:1.1rem; font-weight:800; }
 
-    #radius-sel {
-      background:rgba(255,255,255,.2); border:1px solid rgba(255,255,255,.4);
-      border-radius:6px; padding:3px 6px; color:#fff;
-      font-size:.82rem; font-family:inherit; cursor:pointer; outline:none;
+    #radius-wrap {
+      display:flex; align-items:center; gap:7px;
     }
-    #radius-sel option { background:#1f2937; color:#fff; }
+    #radius-sel {
+      width:90px; accent-color:#2563eb; cursor:pointer; height:4px;
+    }
+    #radius-val {
+      font-size:.82rem; font-weight:700; color:#2563eb;
+      background:#eff6ff; border-radius:6px; padding:2px 7px;
+      white-space:nowrap; min-width:42px; text-align:center;
+    }
 
     #locateBtn {
       background:#fff; color:var(--red); border:none; border-radius:8px;
@@ -138,8 +143,8 @@
                 transition:opacity .15s,transform .1s; }
     .pop-btn:hover  { opacity:.85; transform:translateY(-1px); }
     .pop-btn:active { transform:translateY(0); }
-    .btn-waze  { background:#33ccff; color:#111; }
-    .btn-gmaps { background:#4285f4; color:#fff; }
+    .btn-waze  { background:#00BDD6; color:#111; }
+    .btn-gmaps { background:#fff; color:#333; border:1px solid #ddd; }
 
     /* ── Mobile bottom bar ───────────────────── */
     #mobile-bar {
@@ -165,13 +170,10 @@
       <div id="stat-total"></div>
       <div id="stat-radius">
         <label>בתוך</label>
-        <select id="radius-sel" onchange="onRadiusChange()">
-          <option value="2000">2 ק"מ</option>
-          <option value="5000" selected>5 ק"מ</option>
-          <option value="10000">10 ק"מ</option>
-          <option value="20000">20 ק"מ</option>
-          <option value="50000">50 ק"מ</option>
-        </select>
+        <div id="radius-wrap">
+          <input type="range" id="radius-sel" min="1" max="30" value="5" oninput="onRadiusChange()" />
+          <span id="radius-val">5 ק"מ</span>
+        </div>
         <label>מהמיקום:</label>
         <span id="stat-count">—</span>
         <label>תחנות</label>
@@ -225,6 +227,7 @@ let leafletMarkers = new Map();
 let pinMarker      = null;
 let nearestId      = null;
 let refLat = null, refLon = null;
+let radiusCircle = null;
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 function stationIcon(nearest) {
@@ -245,6 +248,19 @@ function dotIcon(color) {
 }
 
 // ── Popup ─────────────────────────────────────────────────────────────────────
+const WAZE_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <ellipse cx="12" cy="11" rx="10" ry="9" fill="white"/>
+  <circle cx="8.5" cy="9.5" r="1.8" fill="#111"/>
+  <circle cx="15.5" cy="9.5" r="1.8" fill="#111"/>
+  <path d="M8.5 14.5 Q12 17.5 15.5 14.5" stroke="#111" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+  <path d="M7 19.5 L10 16.5 H14 L17 19.5 Q12 23 7 19.5Z" fill="white"/>
+</svg>`;
+
+const GMAPS_SVG = `<svg width="13" height="18" viewBox="0 0 13 18" xmlns="http://www.w3.org/2000/svg">
+  <path d="M6.5 0C2.91 0 0 2.91 0 6.5c0 4.88 6.5 11.5 6.5 11.5S13 11.38 13 6.5C13 2.91 10.09 0 6.5 0z" fill="#EA4335"/>
+  <circle cx="6.5" cy="6.5" r="2.6" fill="white"/>
+</svg>`;
+
 function buildPopup(s) {
   const w = `https://waze.com/ul?ll=${s.lat},${s.lon}&navigate=yes`;
   const g = `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}&travelmode=driving`;
@@ -253,8 +269,8 @@ function buildPopup(s) {
     ${s.addr ? `<div class="pop-addr">📌 ${s.addr}</div>` : ''}
     ${s.dist != null ? `<div class="pop-dist">📍 ${fmt(s.dist)} ממיקומך</div>` : ''}
     <div class="pop-btns">
-      <a href="${w}" target="_blank" class="pop-btn btn-waze">🗺 וויז</a>
-      <a href="${g}" target="_blank" class="pop-btn btn-gmaps">🗺 גוגל מפס</a>
+      <a href="${w}" target="_blank" class="pop-btn btn-waze">${WAZE_SVG} Navigate with Waze</a>
+      <a href="${g}" target="_blank" class="pop-btn btn-gmaps">${GMAPS_SVG} Google Maps</a>
     </div>`;
 }
 function openPopup(s) {
@@ -280,13 +296,31 @@ function renderMarkers() {
 function updateStats() {
   document.getElementById('stat-total').textContent = `${allStations.length} תחנות דלק בכל הארץ`;
   if (refLat === null) return;
-  const radiusM = parseInt(document.getElementById('radius-sel').value);
-  const count   = allStations.filter(s => s.dist != null && s.dist * 1000 <= radiusM).length;
+  const radiusKm = parseInt(document.getElementById('radius-sel').value);
+  document.getElementById('radius-val').textContent = `${radiusKm} ק"מ`;
+  const count = allStations.filter(s => s.dist != null && s.dist <= radiusKm).length;
   document.getElementById('stat-count').textContent = count;
   document.getElementById('stat-radius').style.display = 'flex';
 }
 
-function onRadiusChange() { updateStats(); }
+function drawRadiusCircle() {
+  if (refLat === null) return;
+  if (radiusCircle) map.removeLayer(radiusCircle);
+  const radiusKm = parseInt(document.getElementById('radius-sel').value);
+  radiusCircle = L.circle([refLat, refLon], {
+    radius: radiusKm * 1000,
+    color: '#2563eb', weight: 3, opacity: .85,
+    fillColor: '#2563eb', fillOpacity: .07,
+    interactive: false
+  }).addTo(map);
+}
+
+function onRadiusChange() {
+  document.getElementById('radius-val').textContent =
+    `${document.getElementById('radius-sel').value} ק"מ`;
+  drawRadiusCircle();
+  updateStats();
+}
 
 // ── Distance utils ────────────────────────────────────────────────────────────
 function haversine(la1,lo1,la2,lo2) {
@@ -303,6 +337,7 @@ function setRef(lat, lon) {
   allStations.sort((a,b) => a.dist - b.dist);
   nearestId = allStations[0]?.id ?? null;
   renderMarkers();
+  drawRadiusCircle();
   updateStats();
   updateMobileBar(allStations[0]);
   if (nearestId) setTimeout(() => openPopup(allStations[0]), 400);
@@ -390,7 +425,8 @@ function clearAddrSearch() {
   document.getElementById('addr-input').value = '';
   document.getElementById('addr-clear').style.display = 'none';
   hideSug(); setStatus('');
-  if (pinMarker) { map.removeLayer(pinMarker); pinMarker=null; }
+  if (pinMarker)    { map.removeLayer(pinMarker);    pinMarker=null; }
+  if (radiusCircle) { map.removeLayer(radiusCircle); radiusCircle=null; }
   allStations.forEach(s => s.dist=null);
   allStations.sort((a,b) => a.name.localeCompare(b.name,'he'));
   refLat=null; refLon=null; nearestId=null;
@@ -411,8 +447,8 @@ function updateMobileBar(s) {
   const g = `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}&travelmode=driving`;
   document.getElementById('mobile-nearest').innerHTML = `<b>הכי קרובה:</b> ${s.name} — ${fmt(s.dist)}`;
   document.getElementById('mobile-btns').innerHTML =
-    `<a href="${w}" target="_blank" class="pop-btn btn-waze"  style="flex:1">🗺 וויז</a>
-     <a href="${g}" target="_blank" class="pop-btn btn-gmaps" style="flex:1">🗺 גוגל מפס</a>`;
+    `<a href="${w}" target="_blank" class="pop-btn btn-waze"  style="flex:1">${WAZE_SVG} Navigate with Waze</a>
+     <a href="${g}" target="_blank" class="pop-btn btn-gmaps" style="flex:1">${GMAPS_SVG} Google Maps</a>`;
 }
 
 function setStatus(msg, err=false) {
