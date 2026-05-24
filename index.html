@@ -15,31 +15,58 @@
     html,body { height:100%; font-family:'Segoe UI',Tahoma,Arial,sans-serif;
                 background:var(--bg); color:var(--text); overflow:hidden; }
 
-    /* ── Header ───────────────────────────── */
+    /* ── Header ──────────────────────────────── */
     #header {
       position:fixed; top:0; left:0; right:0;
       background:var(--red); display:flex; flex-direction:column;
       z-index:2000; box-shadow:0 2px 12px rgba(0,0,0,.45);
     }
+
     #row1 {
-      display:flex; align-items:center; justify-content:space-between;
-      padding:0 16px; min-height:70px; flex-wrap:wrap; gap:6px; padding-top:8px; padding-bottom:8px;
+      display:flex; align-items:center; gap:12px;
+      padding:8px 16px; flex-wrap:wrap;
     }
-    #title { display:flex; flex-direction:column; gap:2px; }
-    #title-main { font-size:1rem; font-weight:700; color:#fff; }
-    #title-sub  { font-size:1.25rem; font-weight:800; color:#fff; letter-spacing:.3px; }
+
+    #title { display:flex; flex-direction:column; gap:1px; flex-shrink:0; }
+    #title-main { font-size:.95rem; font-weight:700; color:rgba(255,255,255,.9); }
+    #title-sub  { font-size:1.2rem; font-weight:800; color:#fff; }
+
+    /* Stats block */
+    #stats {
+      flex:1; display:flex; flex-direction:column; gap:3px;
+      border-right:2px solid rgba(255,255,255,.3);
+      padding-right:12px; margin-right:4px;
+      min-width:0;
+    }
+    #stat-total {
+      font-size:.82rem; color:rgba(255,255,255,.85); white-space:nowrap;
+    }
+    #stat-radius {
+      display:none; align-items:center; gap:5px; flex-wrap:wrap;
+      font-size:.85rem; color:#fff; font-weight:600;
+    }
+    #stat-radius label { font-weight:400; color:rgba(255,255,255,.85); }
+    #stat-count { font-size:1.1rem; font-weight:800; }
+
+    #radius-sel {
+      background:rgba(255,255,255,.2); border:1px solid rgba(255,255,255,.4);
+      border-radius:6px; padding:3px 6px; color:#fff;
+      font-size:.82rem; font-family:inherit; cursor:pointer; outline:none;
+    }
+    #radius-sel option { background:#1f2937; color:#fff; }
 
     #locateBtn {
       background:#fff; color:var(--red); border:none; border-radius:8px;
-      padding:7px 13px; font-size:.85rem; font-weight:700; cursor:pointer;
-      font-family:inherit; display:flex; align-items:center; gap:5px;
-      transition:background .15s,transform .1s; flex-shrink:0;
+      padding:8px 14px; font-size:.88rem; font-weight:700; cursor:pointer;
+      font-family:inherit; white-space:nowrap; flex-shrink:0;
+      transition:background .15s, transform .1s;
     }
     #locateBtn:hover  { background:#f0f0f0; transform:translateY(-1px); }
     #locateBtn:active { transform:translateY(0); }
     #locateBtn:disabled { opacity:.6; cursor:not-allowed; }
 
-    #row2 { background:rgba(0,0,0,.18); padding:8px 12px 6px; }
+    /* ── Search row ──────────────────────────── */
+    #row2 { background:rgba(0,0,0,.18); padding:7px 12px 6px; }
     #search-row { display:flex; gap:6px; align-items:center; }
 
     #addr-wrapper { position:relative; flex:1; min-width:0; display:flex; gap:6px; }
@@ -49,96 +76,47 @@
       background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.35);
       border-radius:8px; padding:7px 12px; color:#fff;
       font-size:.88rem; font-family:inherit; outline:none;
-      transition:background .2s,border-color .2s;
     }
     #addr-input::placeholder { color:rgba(255,255,255,.6); }
     #addr-input:focus { background:rgba(255,255,255,.22); border-color:rgba(255,255,255,.7); }
 
     #addr-clear {
       background:none; border:none; color:rgba(255,255,255,.7);
-      font-size:1.1rem; cursor:pointer; padding:0 4px;
-      flex-shrink:0; display:none;
+      font-size:1.1rem; cursor:pointer; padding:0 4px; flex-shrink:0; display:none;
     }
     #addr-clear:hover { color:#fff; }
 
     #search-btn {
       background:rgba(255,255,255,.2); color:#fff;
       border:1px solid rgba(255,255,255,.35); border-radius:8px;
-      padding:7px 13px; font-size:.85rem; font-weight:700;
+      padding:7px 14px; font-size:.85rem; font-weight:700;
       font-family:inherit; cursor:pointer; flex-shrink:0;
-      transition:background .15s;
     }
     #search-btn:hover { background:rgba(255,255,255,.3); }
     #search-btn:disabled { opacity:.5; cursor:not-allowed; }
 
     #addr-suggestions {
-      display:none; position:absolute;
-      top:calc(100% + 4px); right:0; left:0;
+      display:none; position:absolute; top:calc(100% + 4px); right:0; left:0;
       background:var(--panel); border:1px solid var(--border);
-      border-radius:10px; overflow:hidden; max-height:220px;
-      overflow-y:auto; z-index:3000; box-shadow:0 8px 24px rgba(0,0,0,.5);
+      border-radius:10px; overflow:hidden; max-height:220px; overflow-y:auto;
+      z-index:3000; box-shadow:0 8px 24px rgba(0,0,0,.5);
     }
     .suggestion { padding:9px 13px; font-size:.82rem; color:var(--text);
                   cursor:pointer; border-bottom:1px solid var(--border); line-height:1.35; }
     .suggestion:last-child { border-bottom:none; }
-    .suggestion:hover,.suggestion.active { background:var(--card); }
+    .suggestion:hover, .suggestion.active { background:var(--card); }
     .sug-main { font-weight:600; }
     .sug-sub  { color:var(--muted); font-size:.75rem; margin-top:2px; }
 
-    #addr-status { font-size:.72rem; color:rgba(255,255,255,.65);
-                   margin-top:4px; min-height:14px; }
+    #addr-status { font-size:.72rem; color:rgba(255,255,255,.65); margin-top:4px; min-height:13px; }
 
-    /* ── Layout ───────────────────────────── */
-    #layout { display:flex; height:100%; padding-top:112px; }
+    /* ── Map (full screen under header) ──────── */
+    #map { position:fixed; top:var(--hh,130px); left:0; right:0; bottom:0; z-index:1; }
 
-    /* ── Sidebar ──────────────────────────── */
-    #sidebar {
-      width:300px; background:var(--panel); display:flex;
-      flex-direction:column; border-left:1px solid var(--border);
-      flex-shrink:0; z-index:10;
-    }
-    #sidebar-top { padding:10px 12px 8px; border-bottom:1px solid var(--border); }
-    #station-count { font-size:.8rem; color:var(--muted); margin-bottom:6px; }
-    #station-count b { color:var(--red); }
-    #last-updated { font-size:.7rem; color:var(--muted); margin-bottom:8px; opacity:.75; }
-
-    #name-filter {
-      width:100%; background:var(--bg); border:1px solid var(--border);
-      border-radius:8px; padding:7px 11px; color:var(--text);
-      font-size:.88rem; font-family:inherit; outline:none;
-      transition:border-color .2s;
-    }
-    #name-filter:focus { border-color:var(--red); }
-    #name-filter::placeholder { color:var(--muted); }
-
-    #station-list { flex:1; overflow-y:auto; padding:8px; }
-    #station-list::-webkit-scrollbar { width:4px; }
-    #station-list::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
-
-    /* ── Cards ────────────────────────────── */
-    .card {
-      background:var(--card); border:1px solid transparent;
-      border-radius:10px; padding:11px 13px; margin-bottom:6px;
-      cursor:pointer; transition:border-color .2s,transform .15s;
-    }
-    .card:hover { border-color:var(--red); transform:translateX(2px); }
-    .card.nearest { border-color:var(--red); background:linear-gradient(135deg,#2a0a0a,var(--card)); }
-    .card-name { font-weight:700; font-size:.92rem; margin-bottom:3px;
-                 display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
-    .badge { background:var(--red); color:#fff; font-size:.65rem; font-weight:600;
-             padding:2px 6px; border-radius:4px; white-space:nowrap; }
-    .card-addr { font-size:.76rem; color:var(--muted); margin-bottom:4px; }
-    .card-dist { font-size:.78rem; color:var(--red); font-weight:600; }
-
-    /* ── Map ──────────────────────────────── */
-    #map { flex:1; z-index:1; }
-
-    /* ── Loading ──────────────────────────── */
-    #loading {
-      position:fixed; inset:0; background:rgba(17,24,39,.88);
-      display:flex; flex-direction:column; align-items:center;
-      justify-content:center; z-index:9000; gap:14px;
-    }
+    /* ── Loading ─────────────────────────────── */
+    #loading { position:fixed; inset:0; background:rgba(17,24,39,.88);
+               display:flex; flex-direction:column; align-items:center;
+               justify-content:center; z-index:9000; gap:14px; }
     #loading.hidden { display:none; }
     .spinner { width:44px; height:44px; border:4px solid var(--border);
                border-top-color:var(--red); border-radius:50%;
@@ -146,24 +124,24 @@
     @keyframes spin { to { transform:rotate(360deg); } }
     #loading p { font-size:.95rem; color:var(--muted); }
 
-    /* ── Popup ────────────────────────────── */
-    .leaflet-popup-content-wrapper { border-radius:12px !important; box-shadow:0 8px 24px rgba(0,0,0,.35) !important; }
+    /* ── Popup ───────────────────────────────── */
+    .leaflet-popup-content-wrapper { border-radius:12px !important;
+      box-shadow:0 8px 24px rgba(0,0,0,.35) !important; }
     .leaflet-popup-content { margin:14px 16px !important; min-width:210px; }
     .pop-name { font-size:1rem; font-weight:700; color:var(--red); margin-bottom:5px; }
     .pop-addr { font-size:.82rem; color:#555; margin-bottom:4px; }
     .pop-dist { font-size:.82rem; color:#333; margin-bottom:10px; }
     .pop-btns { display:flex; gap:7px; }
-    .pop-btn  { flex:1; padding:8px 6px; border:none; border-radius:8px;
-                font-size:.8rem; font-weight:700; text-decoration:none;
-                text-align:center; cursor:pointer; display:flex;
-                align-items:center; justify-content:center; gap:4px;
+    .pop-btn  { flex:1; padding:8px 6px; border:none; border-radius:8px; font-size:.8rem;
+                font-weight:700; text-decoration:none; text-align:center; cursor:pointer;
+                display:flex; align-items:center; justify-content:center; gap:4px;
                 transition:opacity .15s,transform .1s; }
     .pop-btn:hover  { opacity:.85; transform:translateY(-1px); }
     .pop-btn:active { transform:translateY(0); }
     .btn-waze  { background:#33ccff; color:#111; }
     .btn-gmaps { background:#4285f4; color:#fff; }
 
-    /* ── Mobile ───────────────────────────── */
+    /* ── Mobile bottom bar ───────────────────── */
     #mobile-bar {
       display:none; position:fixed; bottom:0; left:0; right:0;
       background:var(--panel); border-top:1px solid var(--border);
@@ -171,7 +149,7 @@
     }
     #mobile-nearest { font-size:.85rem; margin-bottom:8px; }
     #mobile-btns    { display:flex; gap:8px; }
-    @media (max-width:640px) { #sidebar{display:none;} #mobile-bar{display:block;} }
+    @media (max-width:640px) { #mobile-bar { display:block; } }
   </style>
 </head>
 <body>
@@ -182,8 +160,27 @@
       <div id="title-main">⛽ תחנות דלק של חברת דלק בקרבתך</div>
       <div id="title-sub">לעמרי באהבה מצביקה</div>
     </div>
+
+    <div id="stats">
+      <div id="stat-total"></div>
+      <div id="stat-radius">
+        <label>בתוך</label>
+        <select id="radius-sel" onchange="onRadiusChange()">
+          <option value="2000">2 ק"מ</option>
+          <option value="5000" selected>5 ק"מ</option>
+          <option value="10000">10 ק"מ</option>
+          <option value="20000">20 ק"מ</option>
+          <option value="50000">50 ק"מ</option>
+        </select>
+        <label>מהמיקום:</label>
+        <span id="stat-count">—</span>
+        <label>תחנות</label>
+      </div>
+    </div>
+
     <button id="locateBtn" onclick="findMe()">📍 מצא אותי</button>
   </div>
+
   <div id="row2">
     <div id="search-row">
       <div id="addr-wrapper">
@@ -199,19 +196,7 @@
 </div>
 
 <div id="loading"><div class="spinner"></div><p>טוען תחנות דלק…</p></div>
-
-<div id="layout">
-  <div id="sidebar">
-    <div id="sidebar-top">
-      <div id="station-count"></div>
-      <div id="last-updated"></div>
-      <input id="name-filter" type="text" placeholder="סנן לפי שם או עיר…"
-             oninput="filterByName(this.value)" />
-    </div>
-    <div id="station-list"></div>
-  </div>
-  <div id="map"></div>
-</div>
+<div id="map"></div>
 
 <div id="mobile-bar">
   <div id="mobile-nearest" style="color:var(--muted)">לחץ "מצא אותי" לתחנה הקרובה</div>
@@ -227,13 +212,19 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom:19
 }).addTo(map);
 
+// Adjust map top to match actual header height
+function syncMapTop() {
+  const h = document.getElementById('header').offsetHeight;
+  document.getElementById('map').style.top = h + 'px';
+}
+window.addEventListener('resize', syncMapTop);
+
 // ── State ─────────────────────────────────────────────────────────────────────
-let allStations   = [];   // full list from stations.json
-let shownStations = [];   // currently displayed in sidebar (filtered)
+let allStations    = [];
 let leafletMarkers = new Map();
-let pinMarker  = null;
-let nearestId  = null;
-let refLat = null, refLon = null; // reference point for distance sorting
+let pinMarker      = null;
+let nearestId      = null;
+let refLat = null, refLon = null;
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 function stationIcon(nearest) {
@@ -267,78 +258,52 @@ function buildPopup(s) {
     </div>`;
 }
 function openPopup(s) {
-  const m = leafletMarkers.get(s.id);
-  if (!m) return;
+  const m = leafletMarkers.get(s.id); if (!m) return;
   (m.getPopup() ? m.getPopup().setContent(buildPopup(s)) : m.bindPopup(buildPopup(s),{maxWidth:280}));
   m.openPopup();
 }
 
-// ── Render markers ────────────────────────────────────────────────────────────
+// ── Markers ───────────────────────────────────────────────────────────────────
 function renderMarkers() {
   leafletMarkers.forEach(m => map.removeLayer(m));
   leafletMarkers.clear();
   allStations.forEach(s => {
     const m = L.marker([s.lat,s.lon], { icon:stationIcon(s.id===nearestId) });
-    m.bindPopup(buildPopup(s), { maxWidth:280 });
+    m.bindPopup(buildPopup(s), {maxWidth:280});
     m.on('click', () => m.getPopup().setContent(buildPopup(s)));
     m.addTo(map);
     leafletMarkers.set(s.id, m);
   });
 }
 
-// ── Render sidebar list ───────────────────────────────────────────────────────
-function renderList(list) {
-  const el = document.getElementById('station-list');
-  if (!list.length) {
-    el.innerHTML = `<div style="padding:20px;text-align:center;color:var(--muted)">לא נמצאו תחנות</div>`;
-    return;
-  }
-  el.innerHTML = list.slice(0, 120).map(s => {
-    const nn = s.id === nearestId;
-    return `<div id="card-${s.id}" class="card ${nn?'nearest':''}" onclick="zoomTo(${JSON.stringify(s.id)})">
-      <div class="card-name">${nn?'<span class="badge">הכי קרובה ★</span>':''}${s.name}</div>
-      ${s.addr ? `<div class="card-addr">📌 ${s.addr}</div>` : ''}
-      ${s.dist!=null ? `<div class="card-dist">${fmt(s.dist)}</div>` : ''}
-    </div>`;
-  }).join('');
+// ── Stats ─────────────────────────────────────────────────────────────────────
+function updateStats() {
+  document.getElementById('stat-total').textContent = `${allStations.length} תחנות דלק בכל הארץ`;
+  if (refLat === null) return;
+  const radiusM = parseInt(document.getElementById('radius-sel').value);
+  const count   = allStations.filter(s => s.dist != null && s.dist * 1000 <= radiusM).length;
+  document.getElementById('stat-count').textContent = count;
+  document.getElementById('stat-radius').style.display = 'flex';
 }
 
-function zoomTo(id) {
-  const s = allStations.find(s => s.id===id); if (!s) return;
-  map.setView([s.lat,s.lon], 15); openPopup(s);
-}
-
-function setCount(n) {
-  document.getElementById('station-count').innerHTML = `<b>${n}</b> תחנות דלק בכל הארץ`;
-}
-
-function filterByName(q) {
-  q = q.trim();
-  shownStations = q
-    ? allStations.filter(s => s.name.includes(q) || s.addr.includes(q))
-    : allStations;
-  renderList(shownStations);
-}
+function onRadiusChange() { updateStats(); }
 
 // ── Distance utils ────────────────────────────────────────────────────────────
 function haversine(la1,lo1,la2,lo2) {
   const R=6371, r=Math.PI/180;
-  const dLa=(la2-la1)*r, dLo=(lo2-lo1)*r;
-  const a=Math.sin(dLa/2)**2+Math.cos(la1*r)*Math.cos(la2*r)*Math.sin(dLo/2)**2;
+  const a=Math.sin((la2-la1)*r/2)**2+Math.cos(la1*r)*Math.cos(la2*r)*Math.sin((lo2-lo1)*r/2)**2;
   return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
 function fmt(km) { return km<1 ? `${Math.round(km*1000)} מ'` : `${km.toFixed(1)} ק"מ`; }
 
-// ── Sort all stations by distance from a reference point ──────────────────────
-function sortByRef(lat, lon) {
+// ── Set reference point & update everything ───────────────────────────────────
+function setRef(lat, lon) {
   refLat = lat; refLon = lon;
   allStations.forEach(s => { s.dist = haversine(lat, lon, s.lat, s.lon); });
   allStations.sort((a,b) => a.dist - b.dist);
-  nearestId     = allStations[0]?.id ?? null;
-  shownStations = allStations;
-  document.getElementById('name-filter').value = '';
-  renderMarkers();        // re-render with nearest highlighted
-  renderList(allStations);
+  nearestId = allStations[0]?.id ?? null;
+  renderMarkers();
+  updateStats();
   updateMobileBar(allStations[0]);
   if (nearestId) setTimeout(() => openPopup(allStations[0]), 400);
 }
@@ -351,13 +316,11 @@ function findMe() {
   navigator.geolocation.getCurrentPosition(pos => {
     const {latitude:lat, longitude:lon} = pos.coords;
     setPin(lat, lon, '#4285f4', 'המיקום שלך');
-    sortByRef(lat, lon);
-    map.setView([lat, lon], 13);
-    setStatus(`התחנה הקרובה: ${allStations[0]?.name} — ${fmt(allStations[0]?.dist)}`);
+    map.setView([lat,lon], 13);
+    setRef(lat, lon);
     reset();
   }, err => {
-    console.error(err);
-    alert('לא ניתן לאתר מיקום. בדוק הרשאות גישה למיקום.');
+    console.error(err); alert('לא ניתן לאתר מיקום. בדוק הרשאות גישה למיקום.');
     reset();
   }, { enableHighAccuracy:true, timeout:12000 });
   function reset() { btn.textContent='📍 מצא אותי'; btn.disabled=false; }
@@ -406,10 +369,11 @@ function pickSug(i) {
   const label = r.display_name.split(',').slice(0,2).join(', ');
   document.getElementById('addr-input').value = label;
   hideSug();
-  setPin(parseFloat(r.lat), parseFloat(r.lon), '#10b981', label);
-  sortByRef(parseFloat(r.lat), parseFloat(r.lon));
-  map.setView([parseFloat(r.lat), parseFloat(r.lon)], 12);
-  setStatus(`התחנה הקרובה ל${label}: ${allStations[0]?.name} — ${fmt(allStations[0]?.dist)}`);
+  const lat = parseFloat(r.lat), lon = parseFloat(r.lon);
+  setPin(lat, lon, '#10b981', label);
+  map.setView([lat,lon], 12);
+  setRef(lat, lon);
+  setStatus(`התחנה הקרובה: ${allStations[0]?.name} — ${fmt(allStations[0]?.dist)}`);
 }
 
 async function searchAddress() {
@@ -427,19 +391,17 @@ function clearAddrSearch() {
   document.getElementById('addr-clear').style.display = 'none';
   hideSug(); setStatus('');
   if (pinMarker) { map.removeLayer(pinMarker); pinMarker=null; }
-  // Reset distances and restore alphabetical order
   allStations.forEach(s => s.dist=null);
-  allStations.sort((a,b) => a.name.localeCompare(b.name, 'he'));
-  nearestId=null; shownStations=allStations;
-  document.getElementById('name-filter').value='';
+  allStations.sort((a,b) => a.name.localeCompare(b.name,'he'));
+  refLat=null; refLon=null; nearestId=null;
+  document.getElementById('stat-radius').style.display='none';
   renderMarkers();
-  renderList(allStations);
 }
 
 function setPin(lat, lon, color, label) {
   if (pinMarker) map.removeLayer(pinMarker);
-  pinMarker = L.marker([lat,lon], { icon:dotIcon(color), zIndexOffset:1000 })
-    .addTo(map).bindTooltip(label, { permanent:false });
+  pinMarker = L.marker([lat,lon],{icon:dotIcon(color),zIndexOffset:1000})
+    .addTo(map).bindTooltip(label,{permanent:false});
 }
 
 // ── Mobile bar ────────────────────────────────────────────────────────────────
@@ -453,52 +415,38 @@ function updateMobileBar(s) {
      <a href="${g}" target="_blank" class="pop-btn btn-gmaps" style="flex:1">🗺 גוגל מפס</a>`;
 }
 
-// ── Status ────────────────────────────────────────────────────────────────────
 function setStatus(msg, err=false) {
-  const el=document.getElementById('addr-status');
+  const el = document.getElementById('addr-status');
   el.textContent=msg; el.style.color=err?'#fca5a5':'rgba(255,255,255,.65)';
 }
 
-// Close suggestions on outside click
 document.addEventListener('click', e => {
   if (!document.getElementById('addr-wrapper').contains(e.target)) hideSug();
 });
 
-// ── Boot — load from stations.json ────────────────────────────────────────────
+// ── Boot ──────────────────────────────────────────────────────────────────────
 (async () => {
   try {
     const res = await fetch('stations.json');
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
 
-    allStations   = data.stations;
-    shownStations = allStations;
-
-    // Default order: alphabetical by name
+    allStations = data.stations;
     allStations.sort((a,b) => a.name.localeCompare(b.name,'he'));
 
-    // Show last updated
-    const d = new Date(data.generated);
-    const dateStr = d.toLocaleDateString('he-IL',{day:'numeric',month:'long',year:'numeric'});
-    document.getElementById('last-updated').textContent = `עדכון אחרון: ${dateStr}`;
-
-    setCount(allStations.length);
+    updateStats();
     renderMarkers();
-    renderList(allStations);
+    syncMapTop();
 
-    // Fit map to all stations
     const bounds = L.latLngBounds(allStations.map(s=>[s.lat,s.lon]));
-    map.fitBounds(bounds, { padding:[40,40] });
+    map.fitBounds(bounds, {padding:[40,40]});
 
   } catch(err) {
     console.error(err);
-    document.getElementById('station-list').innerHTML =
-      `<div style="padding:20px;text-align:center;color:#f87171">
-        שגיאה בטעינת הנתונים.<br>
-        <small style="color:var(--muted)">נסה לרענן את הדף</small>
-      </div>`;
+    document.getElementById('stat-total').textContent = 'שגיאה בטעינת נתונים';
   } finally {
     document.getElementById('loading').classList.add('hidden');
+    syncMapTop();
   }
 })();
 </script>
