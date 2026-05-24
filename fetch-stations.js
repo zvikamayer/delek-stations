@@ -1,8 +1,10 @@
-// Weekly refresh script — fetches all Delek stations and saves to stations.json
+// Weekly refresh script — fetches all Delek stations, saves to stations.json,
+// then commits and pushes to GitHub so the live site updates automatically.
 // Scheduled: every Saturday at 02:00 via Windows Task Scheduler
 
-const fs   = require('fs');
-const path = require('path');
+const fs     = require('fs');
+const path   = require('path');
+const { execSync } = require('child_process');
 const OUT  = path.join(__dirname, 'stations.json');
 
 // ── Overpass fetch ────────────────────────────────────────────────────────────
@@ -103,6 +105,15 @@ async function geocodeMissing(stations) {
 
     const elapsed = ((Date.now() - start) / 1000).toFixed(1);
     console.log(`\n✓ Saved ${stations.length} stations to stations.json (${elapsed}s)`);
+
+    // Push updated data to GitHub so the live site updates automatically
+    console.log('→ Pushing to GitHub...');
+    const gitOpts = { cwd: __dirname, stdio: 'inherit' };
+    execSync('git add stations.json', gitOpts);
+    execSync(`git commit -m "Weekly refresh: ${stations.length} stations (${new Date().toISOString().slice(0,10)})"`, gitOpts);
+    execSync('git push', gitOpts);
+    console.log('✓ GitHub Pages updated.');
+
   } catch (err) {
     console.error('\n✗ Error:', err.message);
     process.exit(1);
